@@ -72,10 +72,16 @@ class App(
     private lateinit var readerBackendClient: ReaderBackendClient
 
     private fun getMdocTransportOptionsForNfcEngagement() =
-        MdocTransportOptions(bleUseL2CAP = settingsModel.bleL2capEnabled.value)
+        MdocTransportOptions(
+            bleUseL2CAP = settingsModel.bleL2capEnabled.value,
+            bleUseL2CAPInEngagement = settingsModel.bleL2capInEngagementEnabled.value
+        )
 
     private fun getMdocTransportOptionsForQrEngagement() =
-        MdocTransportOptions(bleUseL2CAP = settingsModel.bleL2capEnabled.value)
+        MdocTransportOptions(
+            bleUseL2CAP = settingsModel.bleL2capEnabled.value,
+            bleUseL2CAPInEngagement = settingsModel.bleL2capInEngagementEnabled.value
+        )
 
     private val initLock = Mutex()
     private var initialized = false

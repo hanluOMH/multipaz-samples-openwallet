@@ -148,6 +148,8 @@ class SettingsModel private constructor(
         bind(devMode, "devMode", false)
         // L2CAP is off by default for now because Apple Wallet's L2CAP implementation is buggy.
         bind(bleL2capEnabled, "bleL2capEnabled", false)
+        // Enable L2CAP when available in device engagement for better large data transfer
+        bind(bleL2capInEngagementEnabled, "bleL2capInEngagementEnabled", true)
     }
 
     val logTransactions = MutableStateFlow<Boolean>(false)
@@ -163,4 +165,5 @@ class SettingsModel private constructor(
     val tosAgreedTo = MutableStateFlow<Boolean>(false)
     val devMode = MutableStateFlow<Boolean>(false)
     val bleL2capEnabled = MutableStateFlow<Boolean>(false)
+    val bleL2capInEngagementEnabled = MutableStateFlow<Boolean>(true)
 }
