@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavController
 import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 import io.ktor.utils.io.printStack
@@ -295,7 +296,7 @@ class App() {
             NavHost(navController = navController, startDestination = "main") {
                 composable("main") {
                     Logger.i(TAG, "NavHost: Rendering 'main' route")
-                    MainApp()
+                    MainApp(navController = navController)
                 }
                 composable("provisioning") {
                     Logger.i(TAG, "NavHost: Rendering 'provisioning' route")
@@ -304,6 +305,15 @@ class App() {
                         stableProvisioningModel,
                         stableProvisioningSupport,
                         onNavigateToMain = { navController.navigate("main") }
+                    )
+                }
+                composable("facematch") {
+                    Logger.i(TAG, "NavHost: Rendering 'facematch' route")
+                    FaceMathScreen(
+                        showToast = { message -> 
+                            // You can implement a toast mechanism here if needed
+                            Logger.i(TAG, "FaceMatch Toast: $message")
+                        }
                     )
                 }
             }
@@ -334,7 +344,7 @@ class App() {
     }
 
     @Composable
-    private fun MainApp() {
+    private fun MainApp(navController: NavController) {
         val selectedTab = remember { mutableStateOf(1) }
         val tabs = listOf("Explore", "Account")
         val deviceEngagement = remember { mutableStateOf<ByteString?>(null) }
@@ -366,7 +376,8 @@ class App() {
                 0 -> ExploreScreen(modifier = Modifier.padding(paddingValues))
                 1 -> AccountScreen(
                     modifier = Modifier.padding(paddingValues),
-                    deviceEngagement = deviceEngagement
+                    deviceEngagement = deviceEngagement,
+                    navController = navController
                 )
             }
         }
@@ -375,7 +386,8 @@ class App() {
     @Composable
     private fun AccountScreen(
         modifier: Modifier = Modifier,
-        deviceEngagement: MutableState<ByteString?>
+        deviceEngagement: MutableState<ByteString?>,
+        navController: NavController
     ) {
         val hasCredentials = remember { mutableStateOf<Boolean?>(null) }
         val coroutineScope = rememberCoroutineScope { promptModel }
@@ -398,6 +410,14 @@ class App() {
             // Credential status indicator below the card
             Spacer(modifier = Modifier.height(16.dp))
             CredentialStatusIndicator(hasCredentials.value)
+            
+            // FaceMatch button
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = { navController.navigate("facematch") }
+            ) {
+                Text("Face Match")
+            }
         }
         val blePermissionState = rememberBluetoothPermissionState()
         val bleEnabledState = rememberBluetoothEnabledState()
@@ -546,29 +566,29 @@ class App() {
                         )
                     )
                 }) {
-                    Text("Present mDL via QR")
+//                    Text("Present mDL via QR")
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "The mDL is also available\n" +
-                            "via NFC engagement and W3C DC API\n" +
-                            "(Android-only right now)",
-                    textAlign = TextAlign.Center
-                )
+//                Spacer(modifier = Modifier.height(16.dp))
+//                Text(
+//                    text = "The mDL is also available\n" +
+//                            "via NFC engagement and W3C DC API\n" +
+//                            "(Android-only right now)",
+//                    textAlign = TextAlign.Center
+//                )
             } else if (hasCredentials.value == false) {
                 // Show a message when no credentials are available
-                Text(
-                    text = "No usable credentials available.\nPlease add a credential first.",
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+//                Text(
+//                    text = "No usable credentials available.\nPlease add a credential first.",
+//                    textAlign = TextAlign.Center
+//                )
+//                Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
                         Logger.i(TAG, "Opening issuer website: https://issuer.multipaz.org")
                         uriHandler.openUri("https://issuer.multipaz.org")
                     }
                 ) {
-                    Text("Get Credentials from Issuer")
+//                    Text("Get Credentials from Issuer")
                 }
             } else {
                 // Show loading state while checking credentials
