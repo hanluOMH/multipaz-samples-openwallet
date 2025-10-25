@@ -10,6 +10,8 @@
 	<string>Bluetooth permission is required for proximity presentations</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>This app uses FaceID to protect keys</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Camera is used for face capture and barcode scanning</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 </dict>
