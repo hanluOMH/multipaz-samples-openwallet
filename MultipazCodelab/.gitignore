@@ -195,3 +195,9 @@ fabric.properties
 *.xcuserstate
 xcuserdata/
 *.xcuserdatad
+
+
+# CocoaPods
+Pods/
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
