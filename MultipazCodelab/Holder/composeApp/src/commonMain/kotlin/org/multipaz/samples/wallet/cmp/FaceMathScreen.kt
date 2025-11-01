@@ -80,6 +80,7 @@ fun FaceMathScreen(
 ) {
     val captureWithPreview = remember { mutableStateOf<Pair<CameraSelection, CameraCaptureResolution>?>(null) }
     val matchLastCapturedSelfie = remember { mutableStateOf<Pair<CameraSelection, CameraCaptureResolution>?>(null) }
+    val matchProfileImage = remember { mutableStateOf<Pair<CameraSelection, CameraCaptureResolution>?>(null) }
     val cameraPermissionState = rememberCameraPermissionState()
     val coroutineScope = rememberCoroutineScope()
     var isProcessingFrame by remember { mutableStateOf(false) }
@@ -92,6 +93,9 @@ fun FaceMathScreen(
     val lastFaceSampleBitmap = remember { mutableStateOf<ImageBitmap?>(null) }
     val lastFaceSampleRect = remember { mutableStateOf<Rect?>(null) }
     var faceMatchLiteRtModel by remember { mutableStateOf<FaceMatchLiteRtModel?>(null) }
+    // Profile image embedding loaded from resources
+    var profileImageEmbedding by remember { mutableStateOf<FaceEmbedding?>(null) }
+    val profileImageBitmap = remember { mutableStateOf<ImageBitmap?>(null) }
 
     // Initialize the FaceNet model
     LaunchedEffect(Unit) {
@@ -258,6 +262,117 @@ fun FaceMathScreen(
         )
     }
 
+    // Step 3. Match against profile.png image from resources.
+    matchProfileImage.value?.let { cameraConfig ->
+        AlertDialog(
+            modifier = Modifier.wrapContentSize(),
+            title = { Text(text = "Match face with profile.png") },
+            text = {
+                if (profileImageEmbedding == null) {
+                    Text(
+                        text = "Loading profile image..."
+                    )
+                } else {
+                    Column(
+                        Modifier.wrapContentSize(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(modifier = Modifier.fillMaxWidth().clipToBounds()) {
+                            Camera(
+                                modifier = Modifier.fillMaxWidth(),
+                                cameraSelection = cameraConfig.first,
+                                captureResolution = cameraConfig.second,
+                                showCameraPreview = true,
+                                onFrameCaptured = { incomingVideoFrame ->
+                                    val triple = processFrame(
+                                        isProcessingFrame,
+                                        matchProfileImage.value,
+                                        incomingVideoFrame,
+                                        transformationMatrix,
+                                        profileImageEmbedding,
+                                        faceMatchLiteRtModel,
+                                        facesData,
+                                        processingStats,
+                                        160
+                                    )
+                                    facesData = triple.first
+                                    isProcessingFrame = triple.second
+                                    processingStats = triple.third
+                                }
+                            )
+                            // Draw profile image in the corner.
+                            profileImageBitmap.value?.let {
+                                Image(
+                                    bitmap = it,
+                                    contentDescription = "Profile image to match",
+                                    modifier = Modifier
+                                        .width(IntrinsicSize.Min)
+                                        .height(IntrinsicSize.Min)
+                                        .align(Alignment.TopEnd)
+                                        .then(
+                                            if (cameraConfig.first.isMirrored()) {
+                                                Modifier.scale(scaleX = -1f, scaleY = 1f)
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
+                                )
+                            }
+                            // Draw matching results and frame stats.
+                            facesData?.let {
+                                FaceMatchResults(
+                                    it,
+                                    transformationMatrix.value,
+                                    processingStats = processingStats ?: FrameProcessingStats(0, 0f)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            onDismissRequest = {
+                matchProfileImage.value = null
+                isProcessingFrame = false
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = {
+                    matchProfileImage.value = null
+                }) {
+                    Text(text = "Close")
+                }
+            }
+        )
+    }
+
+    // Load profile image when matchProfileImage is set
+    LaunchedEffect(matchProfileImage.value) {
+        if (matchProfileImage.value != null && profileImageEmbedding == null && faceMatchLiteRtModel != null) {
+            try {
+                val imageBytes = Res.readBytes("drawable/profile.png")
+                val imageBitmap = loadImageBitmapFromBytes(imageBytes)
+                if (imageBitmap != null) {
+                    profileImageBitmap.value = imageBitmap
+                    // Note: getFaceEmbeddings expects 160x160 images, but will handle resizing internally if needed
+                    // For profile.png, we'll try to get embeddings directly - the model might handle resizing
+                    val embedding = getFaceEmbeddings(imageBitmap, faceMatchLiteRtModel!!)
+                    if (embedding != null) {
+                        profileImageEmbedding = embedding
+                        showToast("Profile image loaded successfully!")
+                    } else {
+                        showToast("Failed to extract face embedding from profile image")
+                    }
+                } else {
+                    showToast("Failed to load profile image")
+                }
+            } catch (e: Exception) {
+                Logger.e(TAG, "Failed to load profile image", e)
+                showToast("Failed to load profile image: ${e.message}")
+            }
+        }
+    }
+
     if (!cameraPermissionState.isGranted) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -311,10 +426,23 @@ fun FaceMathScreen(
                         isProcessingFrame = false
                     }) { Text("Take a selfie and match with previously taken one (Back Camera, Medium Res)") }
                 }
+                item {
+                    TextButton(onClick = {
+                        // Reset profile embedding to force reload
+                        profileImageEmbedding = null
+                        profileImageBitmap.value = null
+                        matchProfileImage.value =
+                            Pair(CameraSelection.DEFAULT_FRONT_CAMERA, CameraCaptureResolution.MEDIUM)
+                        isProcessingFrame = false
+                    }) { Text("Match face with profile.png (Front Camera, Medium Res)") }
+                }
             }
         }
     }
 }
+
+// Expect declaration for platform-specific image loading implementation
+expect fun loadImageBitmapFromBytes(bytes: ByteArray): ImageBitmap?
 
 private fun processFrame(
     isProcessingFrame: Boolean,
