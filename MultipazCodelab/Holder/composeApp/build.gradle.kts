@@ -103,3 +103,41 @@ dependencies {
     debugImplementation(compose.uiTooling)
 }
 
+// Task to copy framework to CocoaPods expected location
+tasks.register<Copy>("prepareCocoaPodsFramework") {
+    description = "Prepares the framework for CocoaPods by copying it to the expected location"
+    group = "cocoapods"
+    
+    // Depend on all iOS framework linking tasks
+    dependsOn(
+        "linkDebugFrameworkIosArm64",
+        "linkDebugFrameworkIosSimulatorArm64",
+        "linkDebugFrameworkIosX64"
+    )
+    
+    val frameworkDir = layout.buildDirectory.dir("cocoapods/framework")
+    val sourceFrameworkDir = layout.buildDirectory.dir("bin/iosArm64/debugFramework")
+    
+    // Copy the framework directory itself, preserving the directory structure
+    from(sourceFrameworkDir) {
+        include("ComposeApp.framework/**")
+    }
+    into(frameworkDir)
+    
+    doLast {
+        println("✓ Framework copied to ${frameworkDir.get().asFile.absolutePath}/ComposeApp.framework")
+    }
+}
+
+// Make the prepareCocoaPodsFramework task run automatically after framework linking
+tasks.named("linkDebugFrameworkIosArm64") {
+    finalizedBy("prepareCocoaPodsFramework")
+}
+
+// Alias task for compatibility with podspec error message
+tasks.register("generateDummyFramework") {
+    description = "Generates dummy framework for CocoaPods (alias for prepareCocoaPodsFramework)"
+    group = "cocoapods"
+    dependsOn("prepareCocoaPodsFramework")
+}
+
