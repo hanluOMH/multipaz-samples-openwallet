@@ -161,13 +161,21 @@ class App {
                     typeDisplayName = "Utopia Driving License",
                 )
 
-                val iacaCert =
-                    X509Cert.fromPem(Res.readBytes("files/iaca_certificate.pem").decodeToString())
 
-                val iacaKey = EcPrivateKey.fromPem(
-                    Res.readBytes("files/iaca_private_key.pem").decodeToString(),
-                    iacaCert.ecPublicKey
-                )
+                val (iacaCert, iacaKey) = try {
+                    val certPem =
+                        Res.readBytes("files/iaca_certificate.pem").decodeToString()
+                    val cert = X509Cert.fromPem(certPem)
+
+                    val keyPem =
+                        Res.readBytes("files/iaca_private_key.pem").decodeToString()
+                    val key = EcPrivateKey.fromPem(keyPem, cert.ecPublicKey)
+
+                    cert to key
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                    return
+                }
 
                 println("------- IACA PEM -------")
                 println(iacaCert.toPem().toString())
@@ -228,7 +236,7 @@ class App {
                         privacyPolicyUrl = "https://apps.multipaz.org"
                     )
                 )
-            } catch (e: TrustPointAlreadyExistsException) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
             }
 
@@ -246,7 +254,7 @@ class App {
                         privacyPolicyUrl = "https://verifier.multipaz.org/identityreaderbackend/"
                     )
                 )
-            } catch (e: TrustPointAlreadyExistsException) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
             }
 
@@ -264,7 +272,7 @@ class App {
                         privacyPolicyUrl = "https://verifier.multipaz.org/identityreaderbackend/"
                     )
                 )
-            } catch (e: TrustPointAlreadyExistsException) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
             }
 
@@ -281,7 +289,7 @@ class App {
                         privacyPolicyUrl = "https://verifier.multipaz.org"
                     )
                 )
-            } catch (e: TrustPointAlreadyExistsException) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
             }
 
