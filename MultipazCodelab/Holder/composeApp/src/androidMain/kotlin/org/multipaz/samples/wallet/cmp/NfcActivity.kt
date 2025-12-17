@@ -10,12 +10,23 @@ import org.multipaz.presentment.model.PresentmentSource
 import org.multipaz.prompt.PromptModel
 import org.multipaz.samples.wallet.cmp.util.Constants.APP_NAME
 import org.multipaz.samples.wallet.cmp.util.Constants.appIcon
+import org.multipaz.samples.wallet.cmp.NfcObserveModeHelper
 
 class NfcActivity : MdocNfcPresentmentActivity() {
 
     private val promptModel: PromptModel by inject()
     private val documentTypeRepository: DocumentTypeRepository by inject()
     private val presentmentSource: PresentmentSource by inject()
+
+    override fun onResume() {
+        super.onResume()
+        NfcObserveModeHelper.inhibitObserveMode()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        NfcObserveModeHelper.uninhibitObserveMode()
+    }
 
     override suspend fun getSettings(): Settings {
         return Settings(

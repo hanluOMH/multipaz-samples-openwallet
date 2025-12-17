@@ -2,15 +2,21 @@ package org.multipaz.samples.wallet.cmp
 
 import org.koin.android.ext.android.inject
 import org.multipaz.compose.mdoc.MdocNdefService
-
 import org.multipaz.mdoc.transport.MdocTransportOptions
 import org.multipaz.prompt.PromptModel
 import org.multipaz.samples.wallet.cmp.util.AppSettingsModel
+import org.multipaz.samples.wallet.cmp.NfcObserveModeHelper
 import org.multipaz.util.Platform
 
 class NdefService: MdocNdefService() {
     private lateinit var settingsModel: AppSettingsModel
     private val promptModel: PromptModel by inject()
+
+    override fun onCreate() {
+        super.onCreate()
+        // Ensure observe mode is disabled while acting as a credential holder.
+        NfcObserveModeHelper.isEnabled = false
+    }
 
     override suspend fun getSettings(): Settings {
 
